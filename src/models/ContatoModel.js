@@ -1,15 +1,19 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 
+
 const ContatoSchema = new mongoose.Schema({
   nome: { type: String, required: true },
   sobrenome: { type: String, required: false, default: '' },
   email: { type: String, required: false, default: '' },
   telefone: { type: String, required: false, default: '' },
   criadoEm: { type: Date, default: Date.now },
+
+  criadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Login', required: true },
 });
 
-const ContatoModel = mongoose.model('Contato', ContatoSchema);
+
+const ContatoModel = mongoose.model(`Contatos`, ContatoSchema);
 
 class Contato {
   constructor(body) {
@@ -24,11 +28,10 @@ class Contato {
     return contato;
   }
 
-  static async buscaContatos() {
-    const contatos = await ContatoModel.find()
-    .sort({criadoEm: -1 });
-    return contatos;
-  }
+static async buscaContatos(userId) {
+  const contatos = await ContatoModel.find({ criadoPor: userId }).sort({ criadoEm: -1 });
+  return contatos
+}
 
   static async delete(id) {
     if (typeof id !== 'string') return;
@@ -36,12 +39,12 @@ class Contato {
     return contato;
   }
 
-  async register() {
+  async register(userId) {
     this.valida();
     if (this.errors.length > 0) return;
 
-    this.contato = await ContatoModel.create(this.body);
-    return this.contato.save();
+    this.body.criadoPor = userId; // 👈 adiciona ao body antes do create
+     return   this.contato = await ContatoModel.create(this.body);
   }
 
    valida() {
@@ -67,6 +70,7 @@ class Contato {
       sobrenome:this.body.sobrenome,
       email:this.body.email,
       telefone:this.body.telefone,
+      
     }
   }
 
